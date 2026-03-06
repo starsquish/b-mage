@@ -125,7 +125,7 @@ ap_pm_entry:
     shr ebx, 24              
     ; right now 50 triangles per core sample
     ; and 1000 bytes worplace
-    mov eax, 100*50 + 4 + 4 + 64 + 3000  ; max size of the stack for the core, 100*MAX_NUM_TRIANGLES + SIZE_OF_NUMBER_OF_TRIANGLES + SIZE_OF_CORE_ID + CACHE_LINE_SPACE + SIZE_OF_WORKPLACE all in bytes
+    mov eax, 1000*50 + 4 + 4 + 64 + 3000  ; max size of the stack for the core, 100*MAX_NUM_TRIANGLES + SIZE_OF_NUMBER_OF_TRIANGLES + SIZE_OF_CORE_ID + CACHE_LINE_SPACE + SIZE_OF_WORKPLACE all in bytes
     mul ebx ; ebx stays the same
     mov esp, 0x9FFF0 ; stack begin!
     sub esp, eax
