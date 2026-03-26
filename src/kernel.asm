@@ -135,16 +135,18 @@ ap_pm_entry:
     jmp parallel
 
 graphics: ; each core jumps to this in between updating, including inactive for calculation cores, so divide by the num_cores
-    mov ebx, esp
+    mov edi, esp
     mov ecx, ebp
     mov esp, kstack_top
     mov eax, 30 ; max num cores
     imul eax, 100000
     sub esp, eax
     and esp, -64
-    push ebx ; esp 
+    push edi ; esp 
     push ecx ; ebp
     mov ebp, esp
+    push ebx ; [ebp-4]
+    push 0 ; this 0 is just for padding to 16 bit alignment
 
     %define WIDTH_CONSIDERING_SIZE 533
     %define HEIGHT_CONSIDERING_SIZE 350
@@ -168,8 +170,27 @@ graphics: ; each core jumps to this in between updating, including inactive for 
     %define sca 0.384
     %define asp 1.523 
 
-    @for ("mov ebx, 0", HEIGHT_CONSIDERING_SIZE, "inc ebx") {
-        @for ("mov ecx, 0", WIDTH_CONSIDERING_SIZE, "inc ecx") {
+    %define cube1 edi
+    %define cube2 esi
+
+    mov edi, kstack_top
+    sub edi, 100000
+
+    mov esi, edi
+    sub esi, 100000
+    
+    and edi, -4
+    and esi, -4
+    sub edi, 68
+    sub esi, 68
+    and edi, -64
+    and esi, -64
+    sub edi, 4
+    sub esi, 4
+
+
+    @for ("mov ebx, [ebp-4]*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)", "([ebp-4] + 1)*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)", "inc ebx") {
+        @for ("mov ecx, [ebp-4]*(WIDTH_CONSIDERING_SIZE / CORE_NUM)", "([ebp-4] + 1)*(WIDTH_CONSIDERING_SIZE / CORE_NUM)", "inc ecx") {
           vmovd xmm0, ebx
           vbroadcastss xmm0, xmm0
           vcvtdq2ps xmm0, xmm0
@@ -201,19 +222,21 @@ graphics: ; each core jumps to this in between updating, including inactive for 
           push fw_2
           push 0.0
 
+          vmovaps xmm4, [esp+12]
+
           push rt_0
           push rt_1
           push rt_2
           push 0.0
 
+          vmovaps xmm5, [esp+12]
+
           push up_0
           push up_1
           push up_2
           push 0.0
-
-          vmovaps xmm4, [ebp-20]
-          vmovaps xmm5, [ebp-36]
-          vmovaps xmm6, [ebp-52]
+          
+          vmovaps xmm6, [esp+12]
 
           vmulps xmm5, xmm5, u
           vmulps xmm6, xmm6, v
@@ -230,6 +253,52 @@ graphics: ; each core jumps to this in between updating, including inactive for 
           vdivps xmm2, xmm2, xmm4
 
           add esp, 4*16
+          
+
+
+          %define rd xmm2
+
+          push 0.0 ; [ebp-12] color_acc
+          push 0.0
+          push 0.0
+          push 0.0
+          push 1.0 ; [ebp-28] reflect_weight
+
+          @for ("mov edx, 0", "2", "inc edx") {
+            push 10000 ; [ebp-32] t_hit
+            mov eax, 0 ; eax obj
+
+            and esp, -16
+            push 0.0 ; [ebp - 44] n
+            push 1.0
+            push 0.0
+            push 0.0
+
+            push -cp_1
+            vbroadcastss xmm3, [esp]
+            vdivps xmm3, xmm3, xmm2
+            vshufps xmm3, xmm3, xmm3, 0b01010101
+            vmovd eax, xmm3 ; sign bit is the only part that stays intact when you put raw float bytes and interpret as int
+            cmp eax, 0
+            jge if_tf_is_not_greater_than_0
+
+if_tf_is_greater_than_0:
+            mov dword [ebp-32], eax
+            mov eax, 1 ; 1 meaning floor
+
+if_tf_is_not_greater_than_0:
+            
+            %define tmin -100000
+            %define tmax 100000
+            ; for cube 1
+            
+            
+
+            ; for cube 2
+            
+
+            add esp, 4
+          }
         }
     }
 
