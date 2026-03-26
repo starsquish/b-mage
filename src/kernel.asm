@@ -4,14 +4,13 @@ bits 16
 %define WIDTH 1600
 %define HEIGHT 1052
 %define PIXEL_SIZE 3
-%define SAMPLES_PER_AXIS 3
-%define SAMPLES_PER_AXIS_SQ 9 ; samples per axis squared
-%define MAX_DEPTH 2
+%define SAMPLES_PER_AXIS 1
+%define SAMPLES_PER_AXIS_SQ 1 ; samples per axis squared
+%define MAX_DEPTH 1
 %define FOV 42
-%define EPSILON 0.00001
 
 %define CORE_NUM 22
-%define FPS  60
+%define FPS 60
 
 %define COL_FLOOR_0 255.0
 %define COL_FLOOR_1 255.0
@@ -21,9 +20,9 @@ bits 16
 %define COL_MIRROR_1 25.5
 %define COL_MIRROR_2 25.5
 
-%define COL_LIGHT_0 5610.0
-%define COL_LIGHT_1 3825.0
-%define COL_LIGHT_2 510.0
+%define COL_LIGHT_0 8000.0
+%define COL_LIGHT_1 6000.0
+%define COL_LIGHT_2 1000.0
 
 %define COL_SKY_0 1.275
 %define COL_SKY_1 1.275
@@ -147,14 +146,94 @@ graphics: ; each core jumps to this in between updating, including inactive for 
     push ecx ; ebp
     mov ebp, esp
 
-
-    mov ecx, 0
-for_each_core_get_triangles:
-    mov eax, kstack_top
+    %define WIDTH_CONSIDERING_SIZE 533
+    %define HEIGHT_CONSIDERING_SIZE 350
     
-    inc ecx
-    cmp ecx, dword MIN_CORE_REQUIREMENTS
-    jl for_each_core_get_triangles
+    %define cp_0 3.5
+    %define cp_1 3.5
+    %define cp_2 -7.0
+
+    %define fw_0 -0.419
+    %define fw_1 -0.347
+    %define fw_2 0.839
+
+    %define rt_0 -0.895
+    %define rt_1 0.0
+    %define rt_2 -0.447
+
+    %define up_0 -0.155
+    %define up_1 0.938
+    %define up_2 0.311
+
+    %define sca 0.384
+    %define asp 1.523 
+
+    @for ("mov ebx, 0", HEIGHT_CONSIDERING_SIZE, "inc ebx") {
+        @for ("mov ecx, 0", WIDTH_CONSIDERING_SIZE, "inc ecx") {
+          vmovd xmm0, ebx
+          vbroadcastss xmm0, xmm0
+          vcvtdq2ps xmm0, xmm0
+
+          vmovd xmm1, ecx
+          vbroadcastss xmm1, xmm1
+          vcvtdq2ps xmm1, xmm1
+
+          vmovaps xmm2, xmm0 ; y
+          vmovaps xmm3, xmm1 ; x
+
+          %define u xmm3
+          %define v xmm2
+
+          push 0.005
+          vmulps u, u, [esp]
+
+          push -0.511
+          vaddps u, u, [esp]
+
+          push -0.005
+          vmulps v, v, [esp]
+
+          push 0.381
+          vaddps v, v, [esp]
+
+          push fw_0
+          push fw_1
+          push fw_2
+          push 0.0
+
+          push rt_0
+          push rt_1
+          push rt_2
+          push 0.0
+
+          push up_0
+          push up_1
+          push up_2
+          push 0.0
+
+          vmovaps xmm4, [ebp-20]
+          vmovaps xmm5, [ebp-36]
+          vmovaps xmm6, [ebp-52]
+
+          vmulps xmm5, xmm5, u
+          vmulps xmm6, xmm6, v
+          vaddps xmm4, xmm4, xmm5
+          vaddps xmm4, xmm4, xmm6
+
+          vmovaps xmm2, xmm4 ; now has copy of xmm4 because xmm4 is going to become a single value now
+
+          vmulps xmm4, xmm4, xmm4
+          vhaddps xmm4, xmm4, xmm4
+          vhaddps xmm4, xmm4, xmm4 ; meant to be twice, look at the instruction spec again if confused
+          vsqrtps xmm4, xmm4
+
+          vdivps xmm2, xmm2, xmm4
+
+          add esp, 4*16
+        }
+    }
+
+
 
     lock dec dword [state]
 loop_back_compare_state:
@@ -199,216 +278,6 @@ parallel:
 ; then it jumps back to wherever
 
 core_0:
-      ; model test section one
-          push 8 ; how many triangles there are
-          push -0.6
-          push 1.6
-          push -0.8
-          push 0.0
-          push -1.6
-          push 0.0
-          push -1.6
-          push -1.6
-          push 0.0
-          push 0.0
-          push -0.0
-          push -1.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.1333
-          push 0.5333
-          push -0.8
-          push -2.2
-          push 0.0
-          push -0.8
-          push -0.6
-          push 1.6
-          push -0.8
-
-          push -2.2
-          push 1.6
-          push -0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push -1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push -1.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.6667
-          push 1.0667
-          push -0.8
-          push -2.2
-          push 0.0
-          push -0.8
-          push -0.6
-          push 1.6
-          push -0.8
-
-          push -2.2
-          push 0.0
-          push 0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push 1.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.1333
-          push 0.5333
-          push 0.8
-          push -2.2
-          push 0.0
-          push 0.8
-          push -0.6
-          push 1.6
-          push 0.8
-
-          push -2.2
-          push 0.0
-          push 0.8
-          push 1.6
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push 1.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.6667
-          push 1.0667
-          push 0.8
-          push -2.2
-          push 0.0
-          push 0.8
-          push -0.6
-          push 1.6
-          push 0.8
-
-          push -2.2
-          push 0.0
-          push -0.8
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push 1.6
-          push 1.6
-          push -1.0
-          push 0.0
-          push 0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -2.2
-          push 0.5333
-          push 0.2667
-          push -2.2
-          push 0.0
-          push -0.8
-          push -2.2
-          push 1.6
-          push 0.8
-
-          push -2.2
-          push 0.0
-          push -0.8
-          push 0.0
-          push 1.6
-          push 1.6
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.0
-          push 0.0
-          push 0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -2.2
-          push 1.0667
-          push -0.2667
-          push -2.2
-          push 0.0
-          push -0.8
-          push -2.2
-          push 1.6
-          push 0.8
-
-          push -0.6
-          push 1.6
-          push 0.8
-          push 0.0
-          push -1.6
-          push 0.0
-          push 0.0
-          push -1.6
-          push -1.6
-          push 1.0
-          push 0.0
-          push 0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -0.6
-          push 0.5333
-          push 0.2667
-          push -0.6
-          push 0.0
-          push -0.8
-          push -0.6
-          push 1.6
-          push 0.8
-
-          push -0.6
-          push 1.6
-          push -0.8
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.6
-          push 0.0
-          push 1.0
-          push 0.0
-          push -0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -0.6
-          push 1.0667
-          push -0.2667
-          push -0.6
-          push 0.0
-          push -0.8
-          push -0.6
-          push 1.6
-          push 0.8
-      ; model test section one end
     ; define objects of triangles here
     ; then have an infinite loop while calling graphics after all calculations
 
@@ -451,215 +320,18 @@ loop_forward_compare_state_core_0:
     jmp core_0_update
 
 core_1:
+    push 1 ; number of cubes
 
-          push 8 ; how many triangles there are
-          push -2.2
-          push 0.0
-          push -0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.0
-          push 0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.1333
-          push 0.0
-          push -0.2667
-          push -2.2
-          push 0.0
-          push -0.8
-          push -0.6
-          push 0.0
-          push 0.8
-
-          push -2.2
-          push 0.0
-          push -0.8
-          push 1.6
-          push 0.0
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.0
-          push 0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.6667
-          push 0.0
-          push 0.2667
-          push -2.2
-          push 0.0
-          push -0.8
-          push -0.6
-          push 0.0
-          push 0.8
-
-          push -0.6
-          push 1.6
-          push 0.8
-          push 0.0
-          push 0.0
-          push -1.6
-          push -1.6
-          push 0.0
-          push -1.6
-          push 0.0
-          push 1.0
-          push 0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.1333
-          push 1.6
-          push -0.2667
-          push -2.2
-          push 1.6
-          push -0.8
-          push -0.6
-          push 1.6
-          push 0.8
-
-          push -2.2
-          push 1.6
-          push 0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push 0.0
-          push -1.6
-          push -0.0
-          push 1.0
-          push 0.0
-          push 25.5
-          push 25.5
-          push 25.5
-          push 1
-          push -1.6667
-          push 1.6
-          push 0.2667
-          push -2.2
-          push 1.6
-          push -0.8
-          push -0.6
-          push 1.6
-          push 0.8
-
-          push 2.2
-          push 1.6
-          push -0.8
-          push 0.0
-          push -1.6
-          push 0.0
-          push -1.6
-          push -1.6
-          push 0.0
-          push 0.0
-          push -0.0
-          push -1.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.6667
-          push 0.5333
-          push -0.8
-          push 0.6
-          push 0.0
-          push -0.8
-          push 2.2
-          push 1.6
-          push -0.8
-
-          push 0.6
-          push 1.6
-          push -0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push -1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push -1.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.1333
-          push 1.0667
-          push -0.8
-          push 0.6
-          push 0.0
-          push -0.8
-          push 2.2
-          push 1.6
-          push -0.8
-
-          push 0.6
-          push 0.0
-          push 0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push 1.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.6667
-          push 0.5333
-          push 0.8
-          push 0.6
-          push 0.0
-          push 0.8
-          push 2.2
-          push 1.6
-          push 0.8
-
-          push 0.6
-          push 0.0
-          push 0.8
-          push 1.6
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push 1.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.1333
-          push 1.0667
-          push 0.8
-          push 0.6
-          push 0.0
-          push 0.8
-          push 2.2
-          push 1.6
-          push 0.8
+    push -2.2
+    push 0.0
+    push -0.8
+    push -0.5999
+    push 1.6
+    push 0.8
+    push 25.5
+    push 25.5
+    push 25.5
+    push 1
     ; then have an infinite loop while calling graphics after all calculations
 
 core_1_update:
@@ -679,214 +351,18 @@ loop_forward_compare_state_core_1:
     jmp core_1_update
 
 core_2:
-          push 8 ; how many triangles there are
-          push 0.6
-          push 0.0
-          push -0.8
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push 1.6
-          push 1.6
-          push -1.0
-          push 0.0
-          push 0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 0.6
-          push 0.5333
-          push 0.2667
-          push 0.6
-          push 0.0
-          push -0.8
-          push 0.6
-          push 1.6
-          push 0.8
+    push 1 ; number of cubes
 
-          push 0.6
-          push 0.0
-          push -0.8
-          push 0.0
-          push 1.6
-          push 1.6
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.0
-          push 0.0
-          push 0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 0.6
-          push 1.0667
-          push -0.2667
-          push 0.6
-          push 0.0
-          push -0.8
-          push 0.6
-          push 1.6
-          push 0.8
-
-          push 2.2
-          push 1.6
-          push 0.8
-          push 0.0
-          push -1.6
-          push 0.0
-          push 0.0
-          push -1.6
-          push -1.6
-          push 1.0
-          push 0.0
-          push 0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 2.2
-          push 0.5333
-          push 0.2667
-          push 2.2
-          push 0.0
-          push -0.8
-          push 2.2
-          push 1.6
-          push 0.8
-
-          push 2.2
-          push 1.6
-          push -0.8
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.6
-          push 0.0
-          push 1.0
-          push 0.0
-          push -0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 2.2
-          push 1.0667
-          push -0.2667
-          push 2.2
-          push 0.0
-          push -0.8
-          push 2.2
-          push 1.6
-          push 0.8
-
-          push 0.6
-          push 0.0
-          push -0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.0
-          push 0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.6667
-          push 0.0
-          push -0.2667
-          push 0.6
-          push 0.0
-          push -0.8
-          push 2.2
-          push 0.0
-          push 0.8
-
-          push 0.6
-          push 0.0
-          push -0.8
-          push 1.6
-          push 0.0
-          push 1.6
-          push 0.0
-          push 0.0
-          push 1.6
-          push 0.0
-          push -1.0
-          push 0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.1333
-          push 0.0
-          push 0.2667
-          push 0.6
-          push 0.0
-          push -0.8
-          push 2.2
-          push 0.0
-          push 0.8
-
-          push 2.2
-          push 1.6
-          push 0.8
-          push 0.0
-          push 0.0
-          push -1.6
-          push -1.6
-          push 0.0
-          push -1.6
-          push 0.0
-          push 1.0
-          push 0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.6667
-          push 1.6
-          push -0.2667
-          push 0.6
-          push 1.6
-          push -0.8
-          push 2.2
-          push 1.6
-          push 0.8
-
-          push 0.6
-          push 1.6
-          push 0.8
-          push 1.6
-          push 0.0
-          push 0.0
-          push 0.0
-          push 0.0
-          push -1.6
-          push -0.0
-          push 1.0
-          push 0.0
-          push 5610.0
-          push 3825.0
-          push 510.0
-          push 2
-          push 1.1333
-          push 1.6
-          push 0.2667
-          push 0.6
-          push 1.6
-          push -0.8
-          push 2.2
-          push 1.6
-          push 0.8
+    push 0.5999
+    push 0.0
+    push -0.8
+    push 2.2
+    push 1.6
+    push 0.8
+    push 8000.0
+    push 6000.0
+    push 1000.0
+    push 2
     ; define objects of triangles here
     ; then have an infinite loop while calling graphics after all calculations
 
