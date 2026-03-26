@@ -142,11 +142,11 @@ graphics: ; each core jumps to this in between updating, including inactive for 
     imul eax, 100000
     sub esp, eax
     and esp, -64
-    push edi ; esp 
-    push ecx ; ebp
+    @push edi ; esp 
+    @push ecx ; ebp
     mov ebp, esp
-    push ebx ; [ebp-4]
-    push 0 ; this 0 is just for padding to 16 bit alignment
+    @push ebx ; [ebp-4]
+    @push 0 ; this 0 is just for padding to 16 bit alignment
 
     %define WIDTH_CONSIDERING_SIZE 533
     %define HEIGHT_CONSIDERING_SIZE 350
@@ -207,36 +207,37 @@ graphics: ; each core jumps to this in between updating, including inactive for 
           %define u xmm3
           %define v xmm2
 
-          push 0.005
+          ; @PUSH PUSHES THE HEX REPRESENTATION OF A FLOAT OTHERWISE JUST USES NORMAL PUSH
+          @push 0.005
           vmulps u, u, [esp]
 
-          push -0.511
+          @push -0.511
           vaddps u, u, [esp]
 
-          push -0.005
+          @push -0.005
           vmulps v, v, [esp]
 
-          push 0.381
+          @push 0.381
           vaddps v, v, [esp]
 
-          push fw_0
-          push fw_1
-          push fw_2
-          push 0.0
+          @push fw_0
+          @push fw_1
+          @push fw_2
+          @push 0.0
 
           vmovaps xmm4, [esp+12]
 
-          push rt_0
-          push rt_1
-          push rt_2
-          push 0.0
+          @push rt_0
+          @push rt_1
+          @push rt_2
+          @push 0.0
 
           vmovaps xmm5, [esp+12]
 
-          push up_0
-          push up_1
-          push up_2
-          push 0.0
+          @push up_0
+          @push up_1
+          @push up_2
+          @push 0.0
           
           vmovaps xmm6, [esp+12]
 
@@ -260,34 +261,34 @@ graphics: ; each core jumps to this in between updating, including inactive for 
 
           %define rd xmm2
           %define ro xmm7
-          push cp_0
-          push cp_1
-          push cp_2
-          push 0.0
+          @push cp_0
+          @push cp_1
+          @push cp_2
+          @push 0.0
           vmovaps xmm7, [esp+12]
           add esp 4*4
 
-          push 0.0 ; [ebp-12] color_acc
-          push 0.0
-          push 0.0
-          push 0.0
-          push 1.0 ; [ebp-28] reflect_weight
+          @push 0.0 ; [ebp-12] color_acc
+          @push 0.0
+          @push 0.0
+          @push 0.0
+          @push 1.0 ; [ebp-28] reflect_weight
 
           @for ("mov edx, 0", "2", "inc edx") {
-            push 10000 ; [ebp-32] t_hit
+            @push 10000 ; [ebp-32] t_hit
             mov eax, 0 ; eax obj
 
             and esp, -16
-            push 0.0 ; [ebp - 44] n
-            push 1.0
-            push 0.0
-            push 0.0
+            @push 0.0 ; [ebp - 44] n
+            @push 1.0
+            @push 0.0
+            @push 0.0
 
             vshufps xmm3, xmm7, xmm7, 0b01010101
-            push 0x80000000
-            push 0x80000000
-            push 0x80000000
-            push 0x80000000
+            @push 0x80000000
+            @push 0x80000000
+            @push 0x80000000
+            @push 0x80000000
             
             vxorps xmm3, xmm3, [esp+12]
             add esp, 16
@@ -305,15 +306,15 @@ if_tf_is_not_greater_than_0:
             
             ; for cube 1
             enter
-            push -100000.0 ; [ebp-4] tmin
-            push 100000.0 ; [ebp-8] tmax
+            @push -100000.0 ; [ebp-4] tmin
+            @push 100000.0 ; [ebp-8] tmax
             
             ; cube is in edi/esi, ro is in xmm7, rd is in xmm2
-            push 0.0 ; [ebp-12] hit_axis
+            @push 0.0 ; [ebp-12] hit_axis
             ; [edi] bmin
             ; [edi-12] bmax
 
-            push 1.0
+            @push 1.0
             vdivss xmm3, [esp], xmm2
             add esp, 4
 
@@ -343,7 +344,7 @@ if_not_t1_greater_t2:
             ; [edi-4] bmin
             ; [edi-16] bmax
 
-            push 1.0
+            @push 1.0
             vdivss xmm3, [esp], xmm2
             vshufps xmm3, xmm3, xmm3, 0b01001011
             add esp, 4
@@ -378,7 +379,7 @@ if_not_t1_greater_t2_l2:
             ; [edi-8] bmin
             ; [edi-20] bmax
 
-            push 1.0
+            @push 1.0
             vdivss xmm3, [esp], xmm2
             vshufps xmm3, xmm3, xmm3, 0b10010011
             add esp, 4
@@ -440,7 +441,7 @@ parallel:
     lock inc dword [num_cores]
 
     %define CORE_ID ebp-4
-    push ebx
+    @push ebx
     sub esp, 64 ; subtract 64 to seperate core_id from the triangle cache lines
 
     %define NUM_TRIANGLES ebp-8
@@ -508,19 +509,19 @@ loop_forward_compare_state_core_0:
     jmp core_0_update
 
 core_1:
-    push 1 ; number of cubes
+    @push 1 ; number of cubes
     and esp, -64
 
-    push -2.2
-    push 0.0
-    push -0.8
-    push -0.5999
-    push 1.6
-    push 0.8
-    push 25.5
-    push 25.5
-    push 25.5
-    push 1
+    @push -2.2
+    @push 0.0
+    @push -0.8
+    @push -0.5999
+    @push 1.6
+    @push 0.8
+    @push 25.5
+    @push 25.5
+    @push 25.5
+    @push 1
     ; then have an infinite loop while calling graphics after all calculations
 
 core_1_update:
@@ -540,19 +541,19 @@ loop_forward_compare_state_core_1:
     jmp core_1_update
 
 core_2:
-    push 1 ; number of cubes
+    @push 1 ; number of cubes
     and esp, -64
 
-    push 0.5999
-    push 0.0
-    push -0.8
-    push 2.2
-    push 1.6
-    push 0.8
-    push 8000.0
-    push 6000.0
-    push 1000.0
-    push 2
+    @push 0.5999
+    @push 0.0
+    @push -0.8
+    @push 2.2
+    @push 1.6
+    @push 0.8
+    @push 8000.0
+    @push 6000.0
+    @push 1000.0
+    @push 2
     ; define objects of triangles here
     ; then have an infinite loop while calling graphics after all calculations
 
