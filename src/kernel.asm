@@ -266,7 +266,7 @@ graphics: ; each core jumps to this in between updating, including inactive for 
           @push cp_2
           @push 0.0
           vmovaps xmm7, [esp+12]
-          add esp 4*4
+          add esp, 4*4
 
           @push 0.0 ; [ebp-12] color_acc
           @push 0.0
