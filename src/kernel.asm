@@ -187,6 +187,8 @@ graphics: ; each core jumps to this in between updating, including inactive for 
     and esi, -64
     sub edi, 4
     sub esi, 4
+    and esi, -64
+    and edi, -64
 
 
     @for ("mov ebx, [ebp-4]*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)", "([ebp-4] + 1)*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)", "inc ebx") {
@@ -257,6 +259,13 @@ graphics: ; each core jumps to this in between updating, including inactive for 
 
 
           %define rd xmm2
+          %define ro xmm7
+          push cp_0
+          push cp_1
+          push cp_2
+          push 0.0
+          vmovaps xmm7, [esp+12]
+          add esp 4*4
 
           push 0.0 ; [ebp-12] color_acc
           push 0.0
@@ -274,8 +283,14 @@ graphics: ; each core jumps to this in between updating, including inactive for 
             push 0.0
             push 0.0
 
-            push -cp_1
-            vbroadcastss xmm3, [esp]
+            vshufps xmm3, xmm7, xmm7, 0b01010101
+            push 0x80000000
+            push 0x80000000
+            push 0x80000000
+            push 0x80000000
+            
+            vxorps xmm3, xmm3, [esp+12]
+            add esp, 16
             vdivps xmm3, xmm3, xmm2
             vshufps xmm3, xmm3, xmm3, 0b01010101
             vmovd eax, xmm3 ; sign bit is the only part that stays intact when you put raw float bytes and interpret as int
@@ -291,6 +306,26 @@ if_tf_is_not_greater_than_0:
             %define tmin -100000
             %define tmax 100000
             ; for cube 1
+            enter
+            
+            ; cube is in edi/esi, ro is in xmm7, rd is in xmm2
+            push 0.0 ; [ebp-4] hit_axis
+            ; [edi] bmin
+            ; [edi-12] bmax
+
+            push 1.0
+            vdivss xmm3, [esp], xmm2
+            add esp, 4
+
+            vmovaps xmm4, [edi] ; f0 is bmin, f3 is bmax
+            vbroadcastss xmm6, xmm7
+            vsubps xmm4, xmm4, xmm6
+            vbroadcastss xmm3, xmm3
+            vmulss xmm4, xmm4, xmm3
+            ; t1 is in f0
+            ; t2 is in f3
+
+            leave
             
             
 
@@ -390,6 +425,7 @@ loop_forward_compare_state_core_0:
 
 core_1:
     push 1 ; number of cubes
+    and esp, -64
 
     push -2.2
     push 0.0
@@ -421,6 +457,7 @@ loop_forward_compare_state_core_1:
 
 core_2:
     push 1 ; number of cubes
+    and esp, -64
 
     push 0.5999
     push 0.0
