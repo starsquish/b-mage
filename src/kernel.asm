@@ -303,13 +303,13 @@ if_tf_is_greater_than_0:
 
 if_tf_is_not_greater_than_0:
             
-            %define tmin -100000
-            %define tmax 100000
             ; for cube 1
             enter
+            push -100000.0 ; [ebp-4] tmin
+            push 100000.0 ; [ebp-8] tmax
             
             ; cube is in edi/esi, ro is in xmm7, rd is in xmm2
-            push 0.0 ; [ebp-4] hit_axis
+            push 0.0 ; [ebp-12] hit_axis
             ; [edi] bmin
             ; [edi-12] bmax
 
@@ -324,6 +324,19 @@ if_tf_is_not_greater_than_0:
             vmulss xmm4, xmm4, xmm3
             ; t1 is in f0
             ; t2 is in f3
+            vbroadcastss xmm6, xmm4
+            vshufps xmm5, xmm4, xmm4, 0b11111111
+            vcmpss xmm3, xmm5, xmm6, 2
+            vmovd edx, xmm3
+            cmp edx, 0
+            jne if_not_t1_greater_t2
+
+if_t1_greater_t2:
+            vshufps xmm4, xmm4, xmm4, 0b11011000
+if_not_t1_greater_t2:
+            
+            vmovd dword [ebp-4], xmm4
+            vmovd dword [ebp-8], xmm5
 
             leave
             
