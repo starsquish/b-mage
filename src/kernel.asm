@@ -191,8 +191,14 @@ graphics: ; each core jumps to this in between updating, including inactive for 
     and edi, -64
 
 
-    @for ("mov ebx, [ebp-4]*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)", "([ebp-4] + 1)*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)", "inc ebx") {
-        @for ("mov ecx, [ebp-4]*(WIDTH_CONSIDERING_SIZE / CORE_NUM)", "([ebp-4] + 1)*(WIDTH_CONSIDERING_SIZE / CORE_NUM)", "inc ecx") {
+    mov ebx, [ebp-4]*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)
+    for_y_loop:
+        cmp ebx, ([ebp-4] + 1)*(HEIGHT_CONSIDERING_SIZE / CORE_NUM)
+        jge skip_for_y_loop
+        mov ecx, [ebp-4]*(WIDTH_CONSIDERING_SIZE / CORE_NUM)
+        for_x_loop:
+          cmp ecx, ([ebp-4] + 1)*(WIDTH_CONSIDERING_SIZE / CORE_NUM)
+          jge skip_for_x_loop
           vmovd xmm0, ebx
           vbroadcastss xmm0, xmm0
           vcvtdq2ps xmm0, xmm0
@@ -274,7 +280,10 @@ graphics: ; each core jumps to this in between updating, including inactive for 
           @push 0.0
           @push 1.0 ; [ebp-28] reflect_weight
 
-          @for ("mov edx, 0", "2", "inc edx") {
+          mov edx, 0
+          for_2_loop:
+            cmp edx, 2
+            jge skip_for_2_loop
             @push 10000 ; [ebp-32] t_hit
             mov eax, 0 ; eax obj
 
@@ -328,7 +337,7 @@ if_tf_is_not_greater_than_0:
             vbroadcastss xmm6, xmm4
             vshufps xmm5, xmm4, xmm4, 0b11111111
             vcmpss xmm3, xmm5, xmm6, 1
-            push 0
+            @push 0
             vmovd [esp], xmm3
             cmp [esp], 0
             jne if_not_t1_greater_t2
@@ -362,7 +371,7 @@ if_not_t1_greater_t2:
             vbroadcastss xmm6, xmm4
             vshufps xmm5, xmm4, xmm4, 0b11111111
             vcmpss xmm3, xmm5, xmm6, 1
-            push 0
+            @push 0
             vmovd [esp], xmm3
             cmp [esp], 0
             jne if_not_t1_greater_t2_l2
@@ -381,8 +390,9 @@ if_not_t1_greater_t2_l2:
             ; rd in xmm2
             vbroadcastss xmm3, [ebp-4]
             vcmpss xmm3, xmm6, xmm3, 1
-            vmovd edx, xmm3
-            cmp edx
+            @push 0
+            vmovd [esp], xmm3
+            cmp [esp], 0
 
             ; AND ANOTHER HERE FOR T2 < TMAX
             
@@ -410,7 +420,7 @@ if_not_t1_greater_t2_l2:
             vbroadcastss xmm6, xmm4
             vshufps xmm5, xmm4, xmm4, 0b11111111
             vcmpss xmm3, xmm5, xmm6, 1
-            push 0
+            @push 0
             vmovd [esp], xmm3
             cmp [esp], 0
             jne if_not_t1_greater_t2_l3
@@ -435,9 +445,17 @@ if_not_t1_greater_t2_l3:
             
 
             add esp, 4
-          }
-        }
-    }
+          inc edx
+          jmp for_2_loop
+          skip_for_2_loop:
+
+        inc ecx
+        jmp for_x_loop
+        skip_for_x_loop:
+
+        inc ebx
+        jmp for_y_loop
+        skip_for_y_loop:
 
 
 
