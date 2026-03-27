@@ -327,14 +327,16 @@ if_tf_is_not_greater_than_0:
             ; t2 is in f3
             vbroadcastss xmm6, xmm4
             vshufps xmm5, xmm4, xmm4, 0b11111111
-            vcmpss xmm3, xmm5, xmm6, 2
-            vmovd edx, xmm3
-            cmp edx, 0
+            vcmpss xmm3, xmm5, xmm6, 1
+            push 0
+            vmovd [esp], xmm3
+            cmp [esp], 0
             jne if_not_t1_greater_t2
 
 if_t1_greater_t2:
             vshufps xmm4, xmm4, xmm4, 0b11011000
 if_not_t1_greater_t2:
+            add esp, 4
             
             mov dword [ebp-12], 0
             vmovd dword [ebp-4], xmm4
@@ -359,16 +361,29 @@ if_not_t1_greater_t2:
             ; t2 is in f3
             vbroadcastss xmm6, xmm4
             vshufps xmm5, xmm4, xmm4, 0b11111111
-            vcmpss xmm3, xmm5, xmm6, 2
-            vmovd edx, xmm3
-            cmp edx, 0
+            vcmpss xmm3, xmm5, xmm6, 1
+            push 0
+            vmovd [esp], xmm3
+            cmp [esp], 0
             jne if_not_t1_greater_t2_l2
 
 if_t1_greater_t2_l2:
             vshufps xmm4, xmm4, xmm4, 0b11011000
 if_not_t1_greater_t2_l2:
+            add esp, 4
 
             ; YOU NEED ANOTHER CHECK HERE FOR T1 > TMIN
+            ; t1 in all xmm6
+            ; t2 in all xmm5
+            ; tmin in [ebp-4]
+            ; tmax in [ebp-8]
+            ; ro in xmm7
+            ; rd in xmm2
+            vbroadcastss xmm3, [ebp-4]
+            vcmpss xmm3, xmm6, xmm3, 1
+            vmovd edx, xmm3
+            cmp edx
+
             ; AND ANOTHER HERE FOR T2 < TMAX
             
             mov dword [ebp-12], 1
@@ -394,14 +409,16 @@ if_not_t1_greater_t2_l2:
             ; t2 is in f3
             vbroadcastss xmm6, xmm4
             vshufps xmm5, xmm4, xmm4, 0b11111111
-            vcmpss xmm3, xmm5, xmm6, 2
-            vmovd edx, xmm3
-            cmp edx, 0
+            vcmpss xmm3, xmm5, xmm6, 1
+            push 0
+            vmovd [esp], xmm3
+            cmp [esp], 0
             jne if_not_t1_greater_t2_l3
 
 if_t1_greater_t2_l3:
             vshufps xmm4, xmm4, xmm4, 0b11011000
 if_not_t1_greater_t2_l3:
+            add esp, 4
 
             ; YOU NEED ANOTHER CHECK HERE FOR T1 > TMIN
             ; AND ANOTHER HERE FOR T2 < TMAX
